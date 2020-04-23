@@ -11,7 +11,7 @@ Then your workflow would be:
 2) The security team approves the security group by setting a tag on the security group.
 3) The user is then allowed to attach the security group to their resources.
 
-Some of this can be done in IAM, but IAM currently lacks the granularity to prevent attaching a security group to a resource based on the resource tags of the security group*. That's why the lambda and all of the associated resources like cloudtrail and cloudwatch events are required.
+Some of this can be done in IAM, but IAM currently lacks the granularity to prevent attaching a security group to a resource based on the resource tags of the security group**. That's why the lambda and all of the associated resources like cloudtrail and cloudwatch events are required.
 
 Security Group Governor is made of two main components:
 1) IAM Rules. These rules prevent the user from setting the “SecurityApproval” tag value to “approved” or “legacy”, and prevents the user from editing the rules within the security group when these tags are set.
@@ -35,4 +35,4 @@ Deployment Steps:
 
 NOTE: If you already have a cloudtrail enabled in the account and don't want another trail, you can take out the cloudtrail portion in the cloudformation script.
 
-* You could prevent the RunInstances and StartInstances API call, but not ModifyNetworkInterface. Then if you wanted, you could prevent access to the to the ModifyNetworkInterface API call unless the ec2 instance was down, which would force users to shut down their ec2 instance in order to change the associated security groups or ANY other network interface parameter.
+** You could prevent the RunInstances and StartInstances API call, but not ModifyNetworkInterface. Then if you wanted, you could prevent access to the to the ModifyNetworkInterface API call unless the ec2 instance was down, which would force users to shut down their ec2 instance in order to change the associated security groups or ANY other network interface parameter.
