@@ -15,7 +15,9 @@ Some of this can be done in IAM, but IAM currently lacks the granularity to prev
 
 Security Group Governor is made of two main components:
 1) IAM Rules. These rules prevent the user from setting the “SecurityApproval” tag value to “approved” or “legacy”, and prevents the user from editing the rules within the security group when these tags are set.
-2) A lambda function. This is triggered by events where the security groups attached to resources can be changed, then it evaluates the security groups, and if any of them don't have the "SecurityApproval : approved" value, they are detached from the resourceThe IAM rules are relatively simple compared to the lambda, which has to process all of the different event types.
+2) A lambda function. This is triggered by events where the security groups attached to resources can be changed, then it evaluates the security groups, and if any of them don't have the "SecurityApproval : approved" value, they are detached from the resource
+
+The IAM rules are relatively simple compared to the lambda, which has to process the various types of events where security groups can be changed and then respond appropriately.
 
 This can be deployed with regular cloudformation stacks, as well as stacksets.
 
@@ -36,5 +38,7 @@ Deployment Steps:
    the readonly value to 0.
 
 NOTE: If you already have a cloudtrail enabled in the account and don't want another trail, you can take out the cloudtrail portion in the cloudformation script.
+
+Please let me know if you have any questions or bug reports.
 
 ** You could prevent the RunInstances and StartInstances API call, but not ModifyNetworkInterface. Then if you wanted, you could prevent access to the to the ModifyNetworkInterface API call unless the ec2 instance was down, which would force users to shut down their ec2 instance in order to change the associated security groups or ANY other network interface parameter.
