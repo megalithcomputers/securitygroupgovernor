@@ -26,8 +26,11 @@ Deployment Steps:
 2) Zip up the index.py and upload it to the s3 bucket.
 3) In the account where you are deploying, you will need to add a tag to all the existing security groups
    so they are ignored by the lambda.
+    
     3a) Go to Resource Groups - > Tag editor
+    
     3b) Pick the security group resource type and select all groups
+    
     3c) Add the tag "SecurityApproval" with a value "approved" or "legacy"
 4) Deploy the cloudformation template and set the LambdaReadOnly variable to 1.
 5) Test it out a bit, attach a security group with and without the tags and make sure the lambda is writing logs properly. 
