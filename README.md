@@ -1,4 +1,4 @@
-Security Group Governor - control the usage of AWS security groups (firewall rulesets) based on tags.
+Security Group Governor - control the usage of AWS security groups (firewall rulesets) based on tags. Currently supports ec2 and rds resources, and ecs implicitly (due to the ec2 backend).
 
 Many large organizations require that firewall rules be approved by a separate team which handles security. In AWS, this usually means that for regular users the ability to create and edit security groups is disabled, and they are required to ask a security team to do it for them so that they can ensure compliance with whatever regulatory framework they are using.
 
@@ -46,4 +46,4 @@ NOTE: If you already have a cloudtrail enabled in the account and don't want ano
 
 Please let me know if you have any questions or bug reports.
 
-** You could prevent the RunInstances and StartInstances API call, but not ModifyNetworkInterface. Then if you wanted, you could prevent access to the to the ModifyNetworkInterface API call unless the ec2 instance was down, which would force users to shut down their ec2 instance in order to change the associated security groups or ANY other network interface parameter.
+** In ec2, you could prevent the RunInstances and StartInstances API call, but not ModifyNetworkInterface. Then if you wanted, you could prevent access to the to the ModifyNetworkInterface API call unless the ec2 instance was down, which would force users to shut down their  instances in order to change the associated security groups or ANY other network interface parameter.
