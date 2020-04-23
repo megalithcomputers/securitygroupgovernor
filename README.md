@@ -1,4 +1,5 @@
 Security Group Governor - control the usage of AWS security groups (firewall rulesets) based on tags.
+
 Many large organizations require that firewall rules be approved by a separate team which handles security. In AWS, this usually means that for regular users the ability to create and edit security groups is disabled, and they are required to ask a security team to do it for them so that they can ensure compliance with whatever regulatory framework they are using.
 
 This could be handled by having developers or a DevOps team write their infrastructure (including security groups) in something like Terraform or CloudFormation, check it into a repo, and then a security team can approve it there and have it feed into a CI/CD pipeline which then creates all of the resources.
