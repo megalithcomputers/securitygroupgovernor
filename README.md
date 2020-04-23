@@ -17,6 +17,8 @@ Security Group Governor is made of two main components:
 1) IAM Rules. These rules prevent the user from setting the “SecurityApproval” tag value to “approved” or “legacy”, and prevents the user from editing the rules within the security group when these tags are set.
 2) A lambda function. This is triggered by events where the security groups attached to resources can be changed, then it evaluates the security groups, and if any of them don't have the "SecurityApproval : approved" value, they are detached from the resourceThe IAM rules are relatively simple compared to the lambda, which has to process all of the different event types.
 
+This can be deployed with regular cloudformation stacks, as well as stacksets.
+
 Deployment Steps:
 1) Create an S3 Bucket to store the index.zip that will hold the lambda.
 2) Zip up the index.py and upload it to the s3 bucket.
