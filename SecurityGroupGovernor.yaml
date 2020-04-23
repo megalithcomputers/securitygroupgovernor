@@ -1,0 +1,205 @@
+Description: Governor to prevent using unapproved security groups via tags
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: Settings
+        Parameters:
+          - NotificationEmailAddress
+          - SggS3Bucket
+          - SggS3Key
+          - CloudtrailS3Bucket
+          - LambdaReadOnly
+    ParameterLabels:
+      NotificationEmailAddress:
+        default: Send notifications to
+Parameters:
+  NotificationEmailAddress:
+    Description: Where to send the alerts when a security group is detached.
+    Type: String
+  SggS3Bucket:
+    Description: Existing S3 Bucket where you have uploaded a .zip file containing the lambda.
+    Type: String
+  SggS3Key:
+    Description: Filename of the .zip file. Rename when updating.
+    Type: String
+  CloudtrailS3Bucket:
+    Description: Existing S3 bucket to store the Cloudtrail logs.
+    Type: String
+  LambdaReadOnly:
+    Description: Disable/enable read-only mode in the lambda, accepted values are 0 or 1. If empty or invalid, 1 is assumed.
+    Type: Number
+Resources:
+  SecurityGroupGovernorRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - 'arn:aws:iam::aws:policy/AmazonEC2FullAccess'
+        - 'arn:aws:iam::aws:policy/AmazonRDSFullAccess'
+        - 'arn:aws:iam::aws:policy/IAMReadOnlyAccess'
+      Policies:
+        - PolicyName: SecurityGroupGovernorPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowSnsActions
+                Effect: Allow
+                Action:
+                  - 'sns:Publish'
+                Resource: !Ref SnsTopicForCloudWatchEvent
+              - Sid: ListAccountAliases
+                Effect: Allow
+                Action: 'iam:ListAccountAliases'
+                Resource: '*'
+  SecurityGroupGovernor:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Description: Detaches noncompliant security groups
+      Handler: index.lambda_handler
+      MemorySize: 128
+      Role: !GetAtt 
+        - SecurityGroupGovernorRole
+        - Arn
+      Runtime: python3.6
+      Timeout: 290
+      Environment:
+        Variables:
+          sns_topic_arn: !Ref SnsTopicForCloudWatchEvent
+          own_username: !Ref SecurityGroupGovernorRole
+          readonly: !Ref LambdaReadOnly
+      Code:
+        S3Bucket: !Ref SggS3Bucket
+        S3Key: !Ref SggS3Key
+  LambdaCloudwatchEC2Permission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      Principal: events.amazonaws.com
+      FunctionName: !Ref SecurityGroupGovernor
+      SourceArn: !GetAtt 
+        - SecurityGroupGovernorEC2Rule
+        - Arn
+  LambdaCloudwatchRDSPermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      Principal: events.amazonaws.com
+      FunctionName: !Ref SecurityGroupGovernor
+      SourceArn: !GetAtt 
+        - SecurityGroupGovernorRDSRule
+        - Arn
+  LambdaCloudwatchGeneralPermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      Principal: events.amazonaws.com
+      FunctionName: !Ref SecurityGroupGovernor
+  SecurityGroupGovernorEC2Rule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      Description: Security Governor EC2 event rule
+      EventPattern:
+        detail:
+          eventSource:
+            - ec2.amazonaws.com
+          eventName:
+            - ModifyNetworkInterfaceAttribute
+            - RunInstances
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt 
+            - SecurityGroupGovernor
+            - Arn
+          Id: SecurityGroupGovernor
+  SecurityGroupGovernorRDSRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      Description: Security Governor RDS event rule
+      EventPattern:
+        detail:
+          eventSource:
+            - rds.amazonaws.com
+          eventName:
+            - ModifyDBCluster
+            - ModifyDBInstance
+            - CreateDBCluster
+            - CreateDBInstance
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt 
+            - SecurityGroupGovernor
+            - Arn
+          Id: SecurityGroupGovernor
+  SnsTopicForCloudWatchEvent:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      DisplayName: Security Group Governor
+  SnsTopicSubscriptionForCloudWatchEvent:
+    Type: 'AWS::SNS::Subscription'
+    Properties:
+      TopicArn: !Ref SnsTopicForCloudWatchEvent
+      Endpoint: !Ref NotificationEmailAddress
+      Protocol: email
+  SecurityGroupPreventModifyApproved:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: CreateAndEditSgExceptApproved
+            Effect: Allow
+            Action:
+              - 'ec2:AuthorizeSecurityGroupEgress'
+              - 'ec2:AuthorizeSecurityGroupIngress'
+              - 'ec2:CreateSecurityGroup'
+              - 'ec2:DeleteSecurityGroup'
+              - 'ec2:RevokeSecurityGroupEgress'
+              - 'ec2:RevokeSecurityGroupIngress'
+            Resource: '*'
+            Condition:
+              StringNotEquals:
+                'ec2:ResourceTag/SecurityApproval':
+                  - approved
+                  - legacy
+                'aws:RequestTag/SecurityApproval':
+                  - approved
+                  - legacy
+          - Sid: DenyEditingTags
+            Effect: Deny
+            Action:
+              - 'ec2:DeleteTags'
+              - 'ec2:CreateTags'
+            Resource: 'arn:aws:ec2:*:*:security-group/*'
+            Condition:
+              StringEquals:
+                'aws:RequestTag/SecurityApproval':
+                  - approved
+                  - legacy
+      PolicyName: security_group_prevent_modify_approved
+      Groups:
+        - !Ref RequireSecurityGroupApproval
+  RequireSecurityGroupApproval:
+    Type: 'AWS::IAM::Group'
+    Properties:
+      GroupName: RequireSecurityGroupApproval
+  CloudTrail:
+    Type: 'AWS::CloudTrail::Trail'
+    Properties:
+      IncludeGlobalServiceEvents: false
+      TrailName: securitygroupgovernor
+      IsMultiRegionTrail: false
+      EventSelectors:
+        - ReadWriteType: WriteOnly
+      S3BucketName: !Ref CloudtrailS3Bucket
+      IsLogging: true
+      EnableLogFileValidation: true
+
