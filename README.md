@@ -37,8 +37,8 @@ Deployment Steps:
    (NOTE: If you did not already have cloudtrails enabled, it make take an hour or so for the events start processing.)
 6) Apply the "prevent_modify_approved" policy that came with the cloudformation script to users who will be subject to the 
    access control rules.
-7) After you have read the logs while the lambda is in readonly mode for a while, you can update the cloudformation stack to set
-   the readonly value to 0.
+7) After you have let the lambda run in readonly mode for a while and reviewed the log output, update the cloudformation stack and
+   turn the readonly flag off.
 8) Any terraform or cloudformation scripts that create security groups will have to be updated to set the SecurityApproval:approved 
    tag. This is part of the reason to run it in read-only mode for a while: so you can see what scripts (if any) need an update.
 
