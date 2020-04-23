@@ -1,3 +1,16 @@
+import os
+import json 
+import time
+import boto3
+from botocore.exceptions import ClientError
+
+# for cloud9 env only, comment when deploying, and pass them via env variables
+#os.environ['sns_topic_arn']="arn here"
+#os.environ['own_username']="arn here"
+
+# cloudformation passes everything as a string, hence the conversions
+#os.environ['readonly']=str(0)
+
 if 'readonly' in os.environ and int(os.environ['readonly']) == 0 or int(os.environ['readonly']) == 1:
     readonly = int(os.environ['readonly'])
 else:
