@@ -39,6 +39,8 @@ Deployment Steps:
    access control rules.
 7) After you have read the logs while the lambda is in readonly mode for a while, you can update the cloudformation stack to set
    the readonly value to 0.
+8) Any terraform or cloudformation scripts that create security groups will have to be updated to set the SecurityApproval:approved 
+   tag. This is part of the reason to run it in read-only mode for a while: so you can see what scripts (if any) need an update.
 
 NOTE: If you already have a cloudtrail enabled in the account and don't want another trail, you can take out the cloudtrail portion in the cloudformation script.
 
