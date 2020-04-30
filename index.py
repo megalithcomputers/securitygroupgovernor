@@ -81,7 +81,9 @@ def checktags(instancetags, sgs, message):
 
     return keep, detach, message
 
-
+# If there are no compliant security groups, a new, empty one must be created.
+# If a resource uses security groups, it has to have at least one attached to it.
+# I would pass the API an empty list and not have bothered with this function if I could.
 def get_or_make_empty_sg(vpcid):
     ec2 = boto3.client('ec2')
     try:
@@ -226,7 +228,6 @@ def lambda_handler(event, context):
 
             if len(detach) > 0 and readonly == 0:
                 if len(keep) == 0:
-                    # if there are no compliant security groups, a new, empty one must be created
                     response = ec2.describe_security_groups(GroupIds=detach)
                     vpcid = response['SecurityGroups'][0]['VpcId']
                     keep = get_or_make_empty_sg(vpcid)
