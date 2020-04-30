@@ -65,11 +65,9 @@ def checktags(instancetags, sgs, message):
             detach.append(groupid)
             print(groupid, ": group to be detached.")
             if appaccess == 0:
-                message = (
-                            message + groupid + ": The AppAccess tags on the security group and on the instance must match.\n")
+                message = (message + groupid + ": The AppAccess tags on the security group and on the instance must match.\n")
             if approved == 0:
-                message = (
-                            message + groupid + ": The SecurityApproval tag on the security group must be set to \"approved\" or \"legacy\". \n")
+                message = (message + groupid + ": The SecurityApproval tag on the security group must be set to \"approved\" or \"legacy\". \n")
         elif appaccess == 1 and approved == 1:
             keep.append(groupid)
             print(groupid, ": group will not be detached.")
@@ -176,11 +174,9 @@ def lambda_handler(event, context):
         for instancenum in range(numinstances):
             ec2resource = boto3.resource('ec2')
             if event['detail']['eventName'] == 'ModifyNetworkInterfaceAttribute':
-                networkinterface = ec2resource.NetworkInterface(
-                    event['detail']['requestParameters']['networkInterfaceId'])
+                networkinterface = ec2resource.NetworkInterface(event['detail']['requestParameters']['networkInterfaceId'])
                 if 'InstanceId' not in networkinterface.attachment:
-                    print("Network interface ", networkinterface.network_interface_id,
-                          " has no instance ID attached, likely attached to a lambda. Exiting.")
+                    print("Network interface ", networkinterface.network_interface_id, " has no instance ID attached, likely attached to a lambda. Exiting.")
                     return
                 print("ModifyNetworkInterfaceAttribute event. Interface", networkinterface.network_interface_id,
                       "is attached to instance id", networkinterface.attachment['InstanceId'])
@@ -189,11 +185,8 @@ def lambda_handler(event, context):
 
             # for starting new ec2 instances
             elif event['detail']['eventName'] == 'RunInstances':
-                networkinterface = ec2resource.NetworkInterface(
-                    event['detail']['responseElements']['instancesSet']['items'][instancenum]['networkInterfaceSet'][
-                        'items'][0]['networkInterfaceId'])
-                print("RunInstances event. Interface", networkinterface.network_interface_id,
-                      "is attached to instance id", networkinterface.attachment['InstanceId'])
+                networkinterface = ec2resource.NetworkInterface(event['detail']['responseElements']['instancesSet']['items'][instancenum]['networkInterfaceSet']['items'][0]['networkInterfaceId'])
+                print("RunInstances event. Interface", networkinterface.network_interface_id, "is attached to instance id", networkinterface.attachment['InstanceId'])
                 ec2instance = ec2resource.Instance(networkinterface.attachment['InstanceId'])
                 sgs = event['detail']['responseElements']['instancesSet']['items'][instancenum]['groupSet']['items']
 
@@ -202,9 +195,7 @@ def lambda_handler(event, context):
             waitcounter = 0
             while waitcounter < waitmax:
                 time.sleep(waitincrement)
-                response = ec2.describe_instance_status(
-                    InstanceIds=[ec2instance.instance_id]
-                )
+                response = ec2.describe_instance_status(InstanceIds=[ec2instance.instance_id])
                 # sometimes we get a blank response from the API
                 if len(response['InstanceStatuses']) == 0 or response['InstanceStatuses'][0]['InstanceState'][
                     'Name'] == 'pending':
@@ -216,8 +207,7 @@ def lambda_handler(event, context):
 
             instancename = str()
             message = str(
-                message + "\nSecurity group governor message regarding instance: " + networkinterface.attachment[
-                    'InstanceId'] + "\n")
+                message + "\nSecurity group governor message regarding instance: " + networkinterface.attachment['InstanceId'] + "\n")
             if ec2instance.tags is not None:
                 for instancetag in ec2instance.tags:
                     if instancetag['Key'] == 'Name':
@@ -347,8 +337,7 @@ def lambda_handler(event, context):
     if changedback == 1:
         message = (message + "Noncompliant security groups detached.")
     if changedback == 0:
-        message = (
-                    message + "Noncompliant security groups could not be detached automatically, please remove them manually to maintain compliance.")
+        message = (message + "Noncompliant security groups could not be detached automatically, please remove them manually to maintain compliance.")
         ec = 1
 
     print(message)
