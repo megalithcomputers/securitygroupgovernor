@@ -197,8 +197,7 @@ def lambda_handler(event, context):
                 time.sleep(waitincrement)
                 response = ec2.describe_instance_status(InstanceIds=[ec2instance.instance_id])
                 # sometimes we get a blank response from the API
-                if len(response['InstanceStatuses']) == 0 or response['InstanceStatuses'][0]['InstanceState'][
-                    'Name'] == 'pending':
+                if len(response['InstanceStatuses']) == 0 or response['InstanceStatuses'][0]['InstanceState']['Name'] == 'pending':
                     waitcounter += 1
                     continue
                 else:
@@ -206,8 +205,7 @@ def lambda_handler(event, context):
             print("had to wait ", waitcounter, "counts of ", waitincrement, "second(s)")
 
             instancename = str()
-            message = str(
-                message + "\nSecurity group governor message regarding instance: " + networkinterface.attachment['InstanceId'] + "\n")
+            message = str(message + "\nSecurity group governor message regarding instance: " + networkinterface.attachment['InstanceId'] + "\n")
             if ec2instance.tags is not None:
                 for instancetag in ec2instance.tags:
                     if instancetag['Key'] == 'Name':
